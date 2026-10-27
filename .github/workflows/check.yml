@@ -1,0 +1,33 @@
+# Every module is formatted and valid, with the OpenTofu release the projects apply with. Every action is pinned to an
+# exact commit (the version is in the comment). Nothing here signs in anywhere.
+
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.1
+          tofu_wrapper: false
+      - name: Format
+        run: tofu fmt -check -recursive -diff
+      - name: Validate each module
+        run: |
+          for module in modules/*/; do
+            echo "== $module"
+            tofu -chdir="$module" init -backend=false -input=false
+            tofu -chdir="$module" validate
+          done
